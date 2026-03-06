@@ -16,7 +16,9 @@ module.exports = defineConfig({
   plugins: [
     {
       resolve: "medusa-plugin-bcms",
-      options: {},
+      options: {
+        apiKey: process.env.BCMS_API_KEY,
+      },
     },
   ],
 })

@@ -1,6 +1,6 @@
 # Medusa BCMS Plugin
 
-This repo contains the **Medusa plugin for BCMS**, which adds BCMS (headless CMS) content to your Medusa store via API routes. It currently uses **mocked data** so you can develop without a BCMS instance.
+This repo contains the **Medusa plugin for BCMS**, which adds BCMS (headless CMS) content to your Medusa store via admin extensions and server-side routes. It now uses the official `@thebcms/client` to talk to a real BCMS instance.
 
 ## Quick start
 
@@ -16,13 +16,10 @@ This repo contains the **Medusa plugin for BCMS**, which adds BCMS (headless CMS
    See [medusa-plugin-bcms/README.md](./medusa-plugin-bcms/README.md) for:
    - Publishing the plugin locally (`npx medusa plugin:publish`)
    - Adding it to your app (`npx medusa plugin:add medusa-plugin-bcms`)
-   - Registering it in `medusa-config.ts`
+   - Registering it in `medusa-config.ts` with `BCMS_API_KEY`
    - Developing with `npx medusa plugin:develop`
 
-3. **Try the APIs**  
-   After the plugin is installed and the app is running, for example:
-   - `GET http://localhost:9000/store/bcms` – overview
-   - `GET http://localhost:9000/store/bcms/entries` – list entries (mocked)
-   - `GET http://localhost:9000/store/bcms/pages` – list pages (mocked)
-
-All data is mocked; replace with real BCMS API calls when you integrate.
+3. **Try the admin UI**  
+   After the plugin is installed and the app is running:
+   - `http://localhost:9000/app/bcms` – configure which BCMS templates are available.
+   - Product detail page → “BCMS content” widget – link a BCMS entry to a product.

@@ -1,24 +1,24 @@
 # Medusa Plugin BCMS
 
-BCMS integration for Medusa – headless CMS content in your store. This plugin exposes **mocked** BCMS data via Store and Admin API routes so you can develop and test without a live BCMS instance.
+BCMS integration for Medusa – headless CMS content in your store. This plugin uses the official `@thebcms/client` to fetch real BCMS templates and entries and expose them in the Medusa Admin.
 
 ## Features
 
-- **Store API** – Fetch BCMS content from your storefront (entries, pages, content types).
-- **Admin API** – BCMS overview and content for the Medusa Admin.
-- **Mocked data** – Content types, entries, and pages are mocked; replace with real BCMS API calls when you integrate.
+- **Admin BCMS settings** – Choose which BCMS templates are available for product enrichment.
+- **Product widget** – On the product details page, select a BCMS entry (aggregated across the enabled templates) and store the mapping on the product’s metadata.
+- **BCMS-backed API** – `/admin/bcms` returns live templates and entries using `BCMS_API_KEY`.
 
-## API Routes (mocked)
+## Admin behaviour
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/store/bcms` | BCMS overview (counts) |
-| GET | `/store/bcms/content-types` | List content types |
-| GET | `/store/bcms/entries` | List entries (optional: `content_type`, `locale`, `status`) |
-| GET | `/store/bcms/entries/:id` | Get entry by id |
-| GET | `/store/bcms/pages` | List pages (optional: `locale`, `status`) |
-| GET | `/store/bcms/pages/:slug` | Get page by slug |
-| GET | `/admin/bcms` | Admin BCMS overview |
+- **Settings page** (`/app/bcms` or `/app/settings/bcms`):
+  - Loads templates from BCMS via `/admin/bcms`.
+  - Lets you multi-select templates to enable for product enrichment.
+  - Persists the selection in `localStorage` under `bcms:selectedTemplates`.
+
+- **Product widget**:
+  - Loads entries from BCMS via `/admin/bcms`.
+  - Aggregates entries across the enabled templates and shows a single “BCMS entry” dropdown.
+  - On save, writes to `product.metadata.bcms_entry = { id, template }` via `/admin/bcms/products/:product_id`.
 
 ## Setup
 
@@ -52,7 +52,9 @@ module.exports = defineConfig({
   plugins: [
     {
       resolve: "medusa-plugin-bcms",
-      options: {},
+      options: {
+        apiKey: process.env.BCMS_API_KEY,
+      },
     },
   ],
 })
@@ -72,15 +74,10 @@ In the **Medusa app** directory:
 npm run dev
 ```
 
-Then call the routes (e.g. `GET http://localhost:9000/store/bcms` or `GET http://localhost:9000/store/bcms/entries`).
+Once the app is running and `BCMS_API_KEY` is set, you can open:
 
-## Replacing mock data with BCMS
-
-- Edit `src/mocks/bcms-data.ts` to add or change mock content.
-- To use the real BCMS API, replace the mock usage in:
-  - `src/api/store/bcms/**/*.ts`
-  - `src/api/admin/bcms/route.ts`
-  with your BCMS client (e.g. `@bcms/sdk` or custom fetch).
+- `http://localhost:9000/app/bcms` – configure enabled BCMS templates.
+- Any product detail page – use the “BCMS content” widget to link a BCMS entry.
 
 ## Build for production / NPM
 
