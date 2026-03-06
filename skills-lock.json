@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "building-admin-dashboard-customizations": {
+      "source": "medusajs/medusa-claude-plugins",
+      "sourceType": "github",
+      "computedHash": "4cd60098a12fcfd682ae4f7668bd1cf0c5986c27e2ebfcf45166e3d69c4e5f1c"
+    },
+    "building-with-medusa": {
+      "source": "medusajs/medusa-agent-skills",
+      "sourceType": "github",
+      "computedHash": "fef62d911eba65523b679baea2ce9bf1c253211f18499115374dc9727c024e4f"
+    },
+    "learning-medusa": {
+      "source": "medusajs/medusa-agent-skills",
+      "sourceType": "github",
+      "computedHash": "0e23645defdc43d1ab3337818673889a13e0904f8ab534a0057f5a61219e87fa"
+    }
+  }
+}
