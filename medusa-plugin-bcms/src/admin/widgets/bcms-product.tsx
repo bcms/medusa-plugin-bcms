@@ -38,7 +38,6 @@ type EntriesResponse = {
   has_api_key: boolean
   template: string
   entries: BcmsEntrySummary[]
-  count: number
 }
 
 const linksKey = (productId: string) => ["bcms-links", productId] as const
@@ -96,35 +95,44 @@ const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
     return groups
   }, [links, slots])
 
-  const linkedTitleQueries = useQueries({
-    queries: links.map((link) => ({
-      queryKey: [
-        "bcms-entry-title",
-        link.template_name,
-        link.entry_id,
-      ] as const,
-      queryFn: async () => {
-        const res = await sdk.client.fetch<EntriesResponse>(
-          "/admin/bcms/entries",
-          { query: { template: link.template_name, limit: 100 } }
-        )
-        const match = res.entries.find(
-          (e) => String(e._id ?? e.id) === link.entry_id
-        )
-        return match ? entryTitle(match) : null
-      },
+  const linkedTemplates = useMemo(
+    () => Array.from(new Set(links.map((l) => l.template_name))),
+    [links]
+  )
+
+  // One fetch per template, regardless of how many links point at it. Resolved
+  // to a `template -> { entry_id -> title }` map for cheap lookups below.
+  const templateEntriesQueries = useQueries({
+    queries: linkedTemplates.map((templateName) => ({
+      queryKey: ["bcms-entries", templateName] as const,
+      queryFn: () =>
+        sdk.client.fetch<EntriesResponse>("/admin/bcms/entries", {
+          query: { template: templateName },
+        }),
       enabled: hasApiKey,
       staleTime: 60_000,
     })),
   })
 
   const linkTitles = useMemo(() => {
-    const map: Record<string, string | null> = {}
-    links.forEach((link, idx) => {
-      map[link.id] = (linkedTitleQueries[idx]?.data ?? null) as string | null
+    const titlesByTemplate: Record<string, Record<string, string>> = {}
+    linkedTemplates.forEach((templateName, idx) => {
+      const data = templateEntriesQueries[idx]?.data
+      if (!data) return
+      const map: Record<string, string> = {}
+      for (const entry of data.entries) {
+        map[String(entry._id ?? entry.id)] = entryTitle(entry)
+      }
+      titlesByTemplate[templateName] = map
     })
-    return map
-  }, [links, linkedTitleQueries])
+
+    const out: Record<string, string | null> = {}
+    for (const link of links) {
+      out[link.id] =
+        titlesByTemplate[link.template_name]?.[link.entry_id] ?? null
+    }
+    return out
+  }, [links, linkedTemplates, templateEntriesQueries])
 
   const createLink = useMutation({
     mutationFn: (input: {

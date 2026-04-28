@@ -1,4 +1,4 @@
-import { Button, Input, Select, Text } from "@medusajs/ui"
+import { Button, Select, Text } from "@medusajs/ui"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react"
 import { sdk } from "../lib/sdk"
@@ -12,9 +12,6 @@ type EntriesResponse = {
   has_api_key: boolean
   template: string
   entries: BcmsEntrySummary[]
-  count: number
-  limit: number
-  offset: number
 }
 
 type Props = {
@@ -30,17 +27,6 @@ type Props = {
   onCancel?: () => void
   submitLabel?: string
   disabled?: boolean
-}
-
-const DEFAULT_LIMIT = 20
-
-function useDebouncedValue<T>(value: T, delay = 300): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
-  return debounced
 }
 
 export const BcmsEntryPicker = ({
@@ -64,8 +50,6 @@ export const BcmsEntryPicker = ({
   const [template, setTemplate] = useState<string>(
     initialTemplate ?? allowed[0]?.name ?? ""
   )
-  const [search, setSearch] = useState("")
-  const debouncedSearch = useDebouncedValue(search, 300)
   const [selected, setSelected] = useState<string>(initialEntryId ?? "")
 
   useEffect(() => {
@@ -75,23 +59,28 @@ export const BcmsEntryPicker = ({
   }, [allowed, template])
 
   const entriesQuery = useQuery({
-    queryKey: ["bcms-entries", template, debouncedSearch],
+    queryKey: ["bcms-entries", template],
     queryFn: () =>
       sdk.client.fetch<EntriesResponse>("/admin/bcms/entries", {
-        query: {
-          template,
-          q: debouncedSearch || undefined,
-          limit: DEFAULT_LIMIT,
-        },
+        query: { template },
       }),
     enabled: !!template,
   })
 
+  const sortedEntries = useMemo(() => {
+    const list = entriesQuery.data?.entries ?? []
+    return list
+      .slice()
+      .sort((a, b) =>
+        entryTitle(a).localeCompare(entryTitle(b), undefined, {
+          sensitivity: "base",
+        })
+      )
+  }, [entriesQuery.data?.entries])
+
   const selectedEntry = useMemo(() => {
-    return (
-      entriesQuery.data?.entries.find((e) => entryId(e) === selected) ?? null
-    )
-  }, [entriesQuery.data?.entries, selected])
+    return sortedEntries.find((e) => entryId(e) === selected) ?? null
+  }, [sortedEntries, selected])
 
   const handleSubmit = () => {
     if (!selected || !template) return
@@ -133,17 +122,6 @@ export const BcmsEntryPicker = ({
 
       <div className="flex flex-col gap-y-1">
         <Text size="small" weight="plus">
-          Search
-        </Text>
-        <Input
-          placeholder="Search entries by title or slug..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div className="flex flex-col gap-y-1">
-        <Text size="small" weight="plus">
           Entry
         </Text>
         {entriesQuery.isLoading ? (
@@ -154,9 +132,9 @@ export const BcmsEntryPicker = ({
           <Text size="small" className="text-ui-fg-subtle">
             {(entriesQuery.error as any)?.message ?? "Failed to load entries."}
           </Text>
-        ) : (entriesQuery.data?.entries.length ?? 0) === 0 ? (
+        ) : sortedEntries.length === 0 ? (
           <Text size="small" className="text-ui-fg-subtle">
-            No entries match your search.
+            No entries found in this template.
           </Text>
         ) : (
           <Select value={selected} onValueChange={setSelected}>
@@ -164,7 +142,7 @@ export const BcmsEntryPicker = ({
               <Select.Value placeholder="Select an entry" />
             </Select.Trigger>
             <Select.Content>
-              {(entriesQuery.data?.entries ?? []).map((entry) => {
+              {sortedEntries.map((entry) => {
                 const id = entryId(entry)
                 return (
                   <Select.Item key={id} value={id}>
@@ -175,14 +153,6 @@ export const BcmsEntryPicker = ({
             </Select.Content>
           </Select>
         )}
-        {entriesQuery.data &&
-          entriesQuery.data.count > entriesQuery.data.entries.length && (
-            <Text size="small" className="text-ui-fg-subtle">
-              Showing {entriesQuery.data.entries.length} of{" "}
-              {entriesQuery.data.count} matches. Refine your search to narrow
-              results.
-            </Text>
-          )}
       </div>
 
       <div className="flex items-center justify-end gap-x-2 pt-1">

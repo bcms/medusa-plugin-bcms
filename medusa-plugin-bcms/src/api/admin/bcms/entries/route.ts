@@ -10,7 +10,7 @@ import { pickEntryTitle } from "../utils"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const bcms = req.scope.resolve<BcmsModuleService>(BCMS_MODULE)
-  const { template, q, limit, offset, skip_cache } =
+  const { template, skip_cache } =
     req.validatedQuery as ListBcmsEntriesSchema
 
   if (!bcms.hasApiKey()) {
@@ -23,19 +23,15 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   }
 
   try {
-    const result = await bcms.getBcmsEntries({
+    const entries = await bcms.getBcmsEntries({
       template,
-      q,
-      limit,
-      offset,
       skipCache: skip_cache,
     })
 
     res.json({
       has_api_key: true,
       template,
-      ...result,
-      entries: result.entries.map((entry: any) => ({
+      entries: entries.map((entry: any) => ({
         ...entry,
         _resolved_title: pickEntryTitle(entry),
       })),

@@ -12,19 +12,6 @@ export type ListBcmsTemplatesSchema = z.infer<typeof ListBcmsTemplatesSchema>
 
 export const ListBcmsEntriesSchema = z.object({
   template: z.string().min(1, "template is required"),
-  q: z.string().optional(),
-  limit: z
-    .preprocess(
-      (val) => (typeof val === "string" ? Number.parseInt(val, 10) : val),
-      z.number().int().min(1).max(100)
-    )
-    .optional(),
-  offset: z
-    .preprocess(
-      (val) => (typeof val === "string" ? Number.parseInt(val, 10) : val),
-      z.number().int().min(0)
-    )
-    .optional(),
   skip_cache: z
     .preprocess(
       (val) => (typeof val === "string" ? val === "true" : val),

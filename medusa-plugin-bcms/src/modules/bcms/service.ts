@@ -121,32 +121,20 @@ class BcmsModuleService extends MedusaService({
   }
 
   /**
-   * Fetch entries for a given template, with optional substring search and
-   * pagination.
+   * Fetch all entries for a given template.
    *
-   * BCMS' client returns all entries for the template; we filter and paginate
-   * server-side here so the admin UI can do search/pagination in one round-trip.
+   * BCMS instances rarely contain more than a couple hundred entries per
+   * template, so we load the full list and let the admin UI filter/sort
+   * client-side. Keeping this method paging-free keeps the contract simple
+   * and the admin code straightforward.
    */
-  async getBcmsEntries(input: {
-    template: string
-    q?: string
-    limit?: number
-    offset?: number
-    skipCache?: boolean
-  }) {
-    const { template, q, limit = 20, offset = 0, skipCache = false } = input
-    const all = await this.requireClient().entry.getAll(template, skipCache)
-
-    const filtered = q
-      ? (all as any[]).filter((entry) => entryMatchesQuery(entry, q))
-      : (all as any[])
-
-    return {
-      entries: filtered.slice(offset, offset + limit),
-      count: filtered.length,
-      limit,
-      offset,
-    }
+  async getBcmsEntries(input: { template: string; skipCache?: boolean }) {
+    const { template, skipCache = false } = input
+    const entries = await this.requireClient().entry.getAll(
+      template,
+      skipCache
+    )
+    return entries as any[]
   }
 
   async getBcmsEntryById(input: {
@@ -201,29 +189,6 @@ class BcmsModuleService extends MedusaService({
     ])
     return created
   }
-}
-
-const TITLE_KEYS = ["title", "name", "label", "slug"]
-
-function entryMatchesQuery(entry: any, q: string): boolean {
-  const needle = q.toLowerCase()
-
-  if (typeof entry?.slug === "string" && entry.slug.toLowerCase().includes(needle)) {
-    return true
-  }
-  const meta = entry?.meta
-  if (Array.isArray(meta)) {
-    for (const m of meta) {
-      const data = m?.data ?? {}
-      for (const key of TITLE_KEYS) {
-        const value = data?.[key]
-        if (typeof value === "string" && value.toLowerCase().includes(needle)) {
-          return true
-        }
-      }
-    }
-  }
-  return false
 }
 
 export default BcmsModuleService
