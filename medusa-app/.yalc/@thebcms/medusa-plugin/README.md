@@ -92,7 +92,7 @@ After registering the plugin, you'll find:
 | POST   | `/admin/bcms/settings`            | Update settings (uses `updateBcmsSettingWorkflow`). |
 | POST   | `/admin/bcms/test-connection`     | Test BCMS connectivity, persist last-test info.   |
 | GET    | `/admin/bcms/templates`           | List BCMS templates.                              |
-| GET    | `/admin/bcms/entries?template=&q=&limit=&offset=` | Search BCMS entries in a template. |
+| GET    | `/admin/bcms/entries?template=`   | List all entries in a BCMS template.              |
 | GET    | `/admin/bcms/links?product_id=`   | List BCMS links for a product.                    |
 | POST   | `/admin/bcms/links`               | Link an entry to a product (`createProductBcmsLinkWorkflow`). |
 | POST   | `/admin/bcms/links/:id`           | Update an existing link (`updateBcmsLinkWorkflow`). |
