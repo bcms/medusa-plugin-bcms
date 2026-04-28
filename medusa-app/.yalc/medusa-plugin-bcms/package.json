@@ -1,6 +1,6 @@
 {
   "name": "medusa-plugin-bcms",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "BCMS integration for Medusa – headless CMS content in your store.",
   "author": "BCMS",
   "license": "MIT",
@@ -50,7 +50,8 @@
   },
   "packageManager": "npm@11.5.2",
   "dependencies": {
-    "@thebcms/client": "^2.0.1"
+    "@thebcms/client": "^2.0.1",
+    "medusa-plugin-bcms": "file:.yalc/medusa-plugin-bcms"
   },
-  "yalcSig": "45df476c448cd8547b4a9ff421a0e34f"
+  "yalcSig": "041a81d72c2dd31667b82a3adfab3d24"
 }

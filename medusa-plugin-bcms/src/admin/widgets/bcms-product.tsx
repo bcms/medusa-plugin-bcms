@@ -160,7 +160,7 @@ const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
         <div>
           <Heading level="h2">BCMS content</Heading>
           <Text size="small" className="text-ui-fg-subtle">
-            Link this product to BCMS content by choosing an entry aggregated from all selected templates.
+            Link this product to BCMS content by choosing an entry aggregated from all selected templates..
           </Text>
         </div>
       </div>

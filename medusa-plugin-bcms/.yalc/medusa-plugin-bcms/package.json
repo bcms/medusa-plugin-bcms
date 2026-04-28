@@ -36,26 +36,6 @@
     "dev": "medusa plugin:develop",
     "prepublishOnly": "medusa plugin:build"
   },
-  "devDependencies": {
-    "@medusajs/admin-sdk": "2.12.4",
-    "@medusajs/cli": "2.12.4",
-    "@medusajs/framework": "2.12.4",
-    "@medusajs/icons": "2.12.4",
-    "@medusajs/medusa": "2.12.4",
-    "@medusajs/test-utils": "2.12.4",
-    "@medusajs/ui": "4.0.25",
-    "@swc/core": "^1.7.28",
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.3.2",
-    "@types/react-dom": "^18.2.25",
-    "prop-types": "^15.8.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.6.2",
-    "vite": "^5.2.11",
-    "yalc": "^1.0.0-pre.53"
-  },
   "peerDependencies": {
     "@medusajs/admin-sdk": "2.12.4",
     "@medusajs/cli": "2.12.4",
@@ -70,7 +50,7 @@
   },
   "packageManager": "npm@11.5.2",
   "dependencies": {
-    "@thebcms/client": "^2.0.1",
-    "medusa-plugin-bcms": "file:.yalc/medusa-plugin-bcms"
-  }
+    "@thebcms/client": "^2.0.1"
+  },
+  "yalcSig": "1850f8f9c53b4a14d65bb8281d3367f2"
 }
