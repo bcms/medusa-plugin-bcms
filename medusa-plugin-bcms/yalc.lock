@@ -1,9 +1,4 @@
 {
   "version": "v1",
-  "packages": {
-    "medusa-plugin-bcms": {
-      "signature": "1850f8f9c53b4a14d65bb8281d3367f2",
-      "file": true
-    }
-  }
+  "packages": {}
 }

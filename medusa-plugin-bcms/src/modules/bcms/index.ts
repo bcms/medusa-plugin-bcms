@@ -7,3 +7,10 @@ export default Module(BCMS_MODULE, {
   service: BcmsModuleService,
 })
 
+export { BcmsModuleService }
+export type {
+  BcmsModuleOptions,
+  BcmsConnectionStatus,
+  BcmsLinkPayload,
+  BcmsSettingPayload,
+} from "./types"

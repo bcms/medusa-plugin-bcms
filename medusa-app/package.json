@@ -26,7 +26,7 @@
     "@medusajs/cli": "2.13.1",
     "@medusajs/framework": "2.13.1",
     "@medusajs/medusa": "2.13.1",
-    "medusa-plugin-bcms": "file:.yalc/medusa-plugin-bcms"
+    "@thebcms/medusa-plugin": "file:.yalc/@thebcms/medusa-plugin"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.13.1",

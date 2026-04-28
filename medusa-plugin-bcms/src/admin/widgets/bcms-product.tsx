@@ -1,157 +1,183 @@
-import type { DetailWidgetProps, AdminProduct } from "@medusajs/framework/types"
-import { useEffect, useMemo, useState } from "react"
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
-import { Container, Heading, Text, Select, Button } from "@medusajs/ui"
+import type {
+  AdminProduct,
+  DetailWidgetProps,
+} from "@medusajs/framework/types"
+import { Trash } from "@medusajs/icons"
+import {
+  Badge,
+  Button,
+  Container,
+  Heading,
+  IconButton,
+  Text,
+  toast,
+} from "@medusajs/ui"
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
+import { useMemo, useState } from "react"
+import BcmsEntryPicker from "../components/bcms-entry-picker"
+import { sdk } from "../lib/sdk"
+import type {
+  BcmsEntrySummary,
+  BcmsLink,
+  BcmsSetting,
+  BcmsTemplate,
+} from "../lib/types"
+import { entryTitle } from "../lib/utils"
 
-const STORAGE_KEY = "bcms:selectedTemplates"
-
-type TemplateName = string
-
-type BcmsEntry = {
-  _id?: string
-  slug?: string
-  [key: string]: any
-}
-
-type BcmsAdminResponse = {
-  bcms: string
+type LinksResponse = { product_id: string; links: BcmsLink[] }
+type TemplatesResponse = { has_api_key: boolean; templates?: BcmsTemplate[] }
+type SettingsResponse = { setting: BcmsSetting; has_api_key: boolean }
+type CreateLinkResponse = { link: BcmsLink }
+type EntriesResponse = {
   has_api_key: boolean
-  templates?: any[]
-  entries_by_template?: Record<string, BcmsEntry[]>
-  message?: string
+  template: string
+  entries: BcmsEntrySummary[]
+  count: number
 }
 
-type BcmsEntryOption = {
-  id: string
-  label: string
-  templateName: string
-}
-
-const loadEnabledTemplates = (): TemplateName[] => {
-  if (typeof window === "undefined") {
-    return []
-  }
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      return []
-    }
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
+const linksKey = (productId: string) => ["bcms-links", productId] as const
+const settingsKey = ["bcms-settings"] as const
+const templatesKey = ["bcms-templates"] as const
 
 const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
-  const [enabledTemplates, setEnabledTemplates] = useState<TemplateName[]>([])
-  const [entriesByTemplate, setEntriesByTemplate] = useState<Record<string, BcmsEntry[]>>({})
-  const [entryId, setEntryId] = useState<string | undefined>()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const queryClient = useQueryClient()
+  const productId = data.id
 
-  useEffect(() => {
-    setEnabledTemplates(loadEnabledTemplates())
-  }, [])
+  const [composeSlot, setComposeSlot] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchBcmsData = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+  const linksQuery = useQuery({
+    queryKey: linksKey(productId),
+    queryFn: () =>
+      sdk.client.fetch<LinksResponse>("/admin/bcms/links", {
+        query: { product_id: productId },
+      }),
+  })
 
-        const res = await fetch("/admin/bcms")
-        const data: BcmsAdminResponse = await res.json()
+  const settingsQuery = useQuery({
+    queryKey: settingsKey,
+    queryFn: () => sdk.client.fetch<SettingsResponse>("/admin/bcms/settings"),
+  })
 
-        if (!data.has_api_key) {
-          setError(
-            data.message || "BCMS_API_KEY is not configured. Set it in the Medusa app environment."
-          )
-          setEntriesByTemplate({})
-          return
-        }
+  const templatesQuery = useQuery({
+    queryKey: templatesKey,
+    queryFn: () =>
+      sdk.client.fetch<TemplatesResponse>("/admin/bcms/templates"),
+    retry: false,
+  })
 
-        setEntriesByTemplate(data.entries_by_template || {})
-      } catch (e: any) {
-        setError("Failed to load entries from BCMS.")
-        setEntriesByTemplate({})
-      } finally {
-        setLoading(false)
-      }
+  const setting = settingsQuery.data?.setting
+  const hasApiKey =
+    settingsQuery.data?.has_api_key ?? templatesQuery.data?.has_api_key ?? false
+  const enabledTemplates = setting?.enabled_templates ?? []
+  const slots = setting?.default_slots ?? ["default"]
+  const templates = templatesQuery.data?.templates ?? []
+
+  const links = linksQuery.data?.links ?? []
+
+  const linksBySlot = useMemo(() => {
+    const groups: Record<string, BcmsLink[]> = {}
+    for (const slot of slots) {
+      groups[slot] = []
     }
-
-    fetchBcmsData()
-  }, [])
-
-  const aggregatedOptions: BcmsEntryOption[] = useMemo(() => {
-    const enabledSet = new Set(enabledTemplates)
-    const options: BcmsEntryOption[] = []
-
-    for (const [templateName, entries] of Object.entries(entriesByTemplate)) {
-      if (enabledSet.size > 0 && !enabledSet.has(templateName)) {
-        continue
-      }
-
-      for (const entry of entries) {
-        const id = String(entry._id ?? entry.slug ?? JSON.stringify(entry))
-        // Try to read title from the first available language meta
-        const meta = (entry as any)?.meta
-        let title: string | undefined
-        if (Array.isArray(meta) && meta.length > 0) {
-          const first = meta[0]
-          title =
-            first?.data?.title ??
-            first?.data?.name ??
-            first?.data?.slug
-        }
-
-        const label = title ?? entry.slug ?? id
-
-        options.push({
-          id,
-          label: `${templateName}: ${label}`,
-          templateName,
-        })
-      }
+    for (const link of links) {
+      const slot = link.slot ?? "default"
+      groups[slot] = groups[slot] ?? []
+      groups[slot].push(link)
     }
-
-    return options
-  }, [entriesByTemplate, enabledTemplates])
-
-  const selectedOption = aggregatedOptions.find((opt) => opt.id === entryId)
-
-  const handleSave = async () => {
-    if (!selectedOption) {
-      return
+    for (const slot of Object.keys(groups)) {
+      groups[slot] = groups[slot].sort((a, b) => a.position - b.position)
     }
-    try {
-      setSaving(true)
-      setSaved(false)
+    return groups
+  }, [links, slots])
 
-      const res = await fetch(`/admin/bcms/products/${data.id}`, {
+  const linkedTitleQueries = useQueries({
+    queries: links.map((link) => ({
+      queryKey: [
+        "bcms-entry-title",
+        link.template_name,
+        link.entry_id,
+      ] as const,
+      queryFn: async () => {
+        const res = await sdk.client.fetch<EntriesResponse>(
+          "/admin/bcms/entries",
+          { query: { template: link.template_name, limit: 100 } }
+        )
+        const match = res.entries.find(
+          (e) => String(e._id ?? e.id) === link.entry_id
+        )
+        return match ? entryTitle(match) : null
+      },
+      enabled: hasApiKey,
+      staleTime: 60_000,
+    })),
+  })
+
+  const linkTitles = useMemo(() => {
+    const map: Record<string, string | null> = {}
+    links.forEach((link, idx) => {
+      map[link.id] = (linkedTitleQueries[idx]?.data ?? null) as string | null
+    })
+    return map
+  }, [links, linkedTitleQueries])
+
+  const createLink = useMutation({
+    mutationFn: (input: {
+      entry_id: string
+      template_name: string
+      slot: string
+    }) =>
+      sdk.client.fetch<CreateLinkResponse>("/admin/bcms/links", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          entryId: selectedOption.id,
-          templateName: selectedOption.templateName,
-        }),
-      })
+        body: { product_id: productId, ...input },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: linksKey(productId) })
+      toast.success("BCMS entry linked.")
+      setComposeSlot(null)
+    },
+    onError: (err: any) => {
+      toast.error(err?.message ?? "Failed to link BCMS entry.")
+    },
+  })
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body?.message || "Failed to save BCMS mapping.")
-      }
+  const deleteLink = useMutation({
+    mutationFn: (linkId: string) =>
+      sdk.client.fetch(`/admin/bcms/links/${linkId}`, {
+        method: "DELETE",
+        query: { product_id: productId },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: linksKey(productId) })
+      toast.success("BCMS entry unlinked.")
+    },
+    onError: (err: any) => {
+      toast.error(err?.message ?? "Failed to unlink BCMS entry.")
+    },
+  })
 
-      setSaved(true)
-    } catch (e: any) {
-      setError(e.message || "Failed to save BCMS mapping.")
-    } finally {
-      setSaving(false)
+  const renderEmpty = () => {
+    if (!hasApiKey) {
+      return (
+        <Text size="small" className="text-ui-fg-subtle">
+          Set <code>BCMS_API_KEY</code> in the plugin options to start linking
+          BCMS entries to this product.
+        </Text>
+      )
     }
+    if (linksQuery.isLoading || settingsQuery.isLoading) {
+      return (
+        <Text size="small" className="text-ui-fg-subtle">
+          Loading BCMS links&hellip;
+        </Text>
+      )
+    }
+    return null
   }
 
   return (
@@ -160,71 +186,114 @@ const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
         <div>
           <Heading level="h2">BCMS content</Heading>
           <Text size="small" className="text-ui-fg-subtle">
-            Link this product to BCMS content by choosing an entry aggregated from all selected templates..
+            Attach BCMS entries to this product, grouped by slot. Slots are
+            configured under Settings &rsaquo; BCMS.
           </Text>
         </div>
+        {!hasApiKey && (
+          <Badge color="red" size="2xsmall">
+            BCMS not configured
+          </Badge>
+        )}
       </div>
-      <div className="px-6 py-4 space-y-3">
-        {loading && (
-          <Text size="small" className="text-ui-fg-subtle">
-            Loading entries from BCMS...
-          </Text>
-        )}
 
-        {!loading && error && (
-          <Text size="small" className="text-ui-fg-subtle">
-            {error}
-          </Text>
-        )}
+      <div className="px-6 py-4 flex flex-col gap-y-5">
+        {renderEmpty()}
 
-        {!loading && !error && aggregatedOptions.length === 0 && (
-          <Text size="small" className="text-ui-fg-subtle">
-            No BCMS entries found for the selected templates. Go to BCMS settings to select templates.
-          </Text>
-        )}
-
-        {!loading && !error && aggregatedOptions.length > 0 && (
+        {hasApiKey && !linksQuery.isLoading && (
           <>
-            <div className="space-y-1">
-              <Text weight="plus">BCMS entry</Text>
-              <Select value={entryId} onValueChange={(value) => setEntryId(value)}>
-                <Select.Trigger>
-                  <Select.Value placeholder="Select a BCMS entry" />
-                </Select.Trigger>
-                <Select.Content>
-                  {aggregatedOptions.map((opt) => (
-                    <Select.Item key={opt.id} value={opt.id}>
-                      {opt.label}
-                    </Select.Item>
+            {slots.map((slot) => {
+              const slotLinks = linksBySlot[slot] ?? []
+              const isComposing = composeSlot === slot
+              return (
+                <div key={slot} className="flex flex-col gap-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-x-2">
+                      <Text size="small" weight="plus">
+                        {slot}
+                      </Text>
+                      <Badge size="2xsmall" color="grey">
+                        {slotLinks.length}
+                      </Badge>
+                    </div>
+                    {!isComposing && (
+                      <Button
+                        type="button"
+                        size="small"
+                        variant="secondary"
+                        onClick={() => setComposeSlot(slot)}
+                      >
+                        Add entry
+                      </Button>
+                    )}
+                  </div>
+
+                  {slotLinks.length === 0 && !isComposing && (
+                    <Text size="small" className="text-ui-fg-subtle">
+                      No entries linked in this slot yet.
+                    </Text>
+                  )}
+
+                  {slotLinks.map((link) => (
+                    <div
+                      key={link.id}
+                      className="flex items-center justify-between gap-x-2 rounded-md border border-ui-border-base bg-ui-bg-subtle px-3 py-2"
+                    >
+                      <div className="flex flex-col">
+                        <Text size="small" weight="plus">
+                          {linkTitles[link.id] ?? link.entry_id}
+                        </Text>
+                        <Text size="small" className="text-ui-fg-subtle">
+                          {link.template_name}
+                          {link.language ? ` · ${link.language}` : ""}
+                        </Text>
+                      </div>
+                      <IconButton
+                        type="button"
+                        size="small"
+                        variant="transparent"
+                        onClick={() => deleteLink.mutate(link.id)}
+                        disabled={deleteLink.isPending}
+                        aria-label="Remove BCMS link"
+                      >
+                        <Trash />
+                      </IconButton>
+                    </div>
                   ))}
-                </Select.Content>
-              </Select>
-            </div>
 
-            {selectedOption && (
-              <div className="pt-2 space-y-1">
-                <Text size="small" className="text-ui-fg-subtle">
-                  Selected mapping (saved on product metadata):
-                </Text>
-                <Text size="small">
-                  Template: <span className="font-semibold">{selectedOption.templateName}</span>
-                </Text>
-                <Text size="small">
-                  Entry ID: <span className="font-semibold">{selectedOption.id}</span>
-                </Text>
-              </div>
-            )}
+                  {isComposing && templates.length > 0 && (
+                    <div className="rounded-md border border-ui-border-base p-3">
+                      <BcmsEntryPicker
+                        templates={templates}
+                        enabledTemplates={enabledTemplates}
+                        submitLabel="Link entry"
+                        disabled={createLink.isPending}
+                        onCancel={() => setComposeSlot(null)}
+                        onSelect={({ entry_id, template_name }) =>
+                          createLink.mutate({
+                            entry_id,
+                            template_name,
+                            slot,
+                          })
+                        }
+                      />
+                    </div>
+                  )}
 
-            <div className="pt-2">
-              <Button
-                type="button"
-                size="small"
-                variant="secondary"
-                disabled={!selectedOption || saving}
-                onClick={handleSave}
-              >
-                {saving ? "Saving..." : saved ? "Saved" : "Save mapping"}
-              </Button>
+                  {isComposing && templates.length === 0 && (
+                    <Text size="small" className="text-ui-fg-subtle">
+                      No BCMS templates are available. Configure templates in
+                      BCMS first.
+                    </Text>
+                  )}
+                </div>
+              )
+            })}
+
+            <div className="flex items-center gap-x-2 pt-2">
+              <Text size="small" className="text-ui-fg-subtle">
+                Need another section? Add a slot in Settings &rsaquo; BCMS.
+              </Text>
             </div>
           </>
         )}
@@ -238,4 +307,3 @@ export const config = defineWidgetConfig({
 })
 
 export default BcmsProductWidget
-

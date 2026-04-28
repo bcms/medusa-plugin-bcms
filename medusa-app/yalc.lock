@@ -4,6 +4,10 @@
     "medusa-plugin-bcms": {
       "signature": "041a81d72c2dd31667b82a3adfab3d24",
       "file": true
+    },
+    "@thebcms/medusa-plugin": {
+      "signature": "3359e953643392ab3025ef48bdbfe4c4",
+      "file": true
     }
   }
 }

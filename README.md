@@ -1,31 +1,44 @@
-# Medusa BCMS Plugin
+# BCMS × Medusa
 
-This repo contains the **Medusa plugin for BCMS**, which adds BCMS (headless CMS) content to your Medusa store via admin extensions and server-side routes. It now uses the official `@thebcms/client` to talk to a real BCMS instance.
+Monorepo for the official BCMS plugin for Medusa v2.
 
-## Quick start
+```
+.
+├── medusa-plugin-bcms/   # The plugin source — published to npm as @thebcms/medusa-plugin
+├── medusa-app/           # Local Medusa host app used to test the plugin
+└── other-medusa-interations/  # Reference Medusa-x-CMS tutorials (Sanity, Contentful, Payload)
+```
 
-1. **Plugin lives in** `medusa-plugin-bcms/`. Go there to develop or build:
+## Plugin
 
-   ```bash
-   cd medusa-plugin-bcms
-   npm install
-   npm run build
-   ```
+The plugin lives in [`medusa-plugin-bcms/`](./medusa-plugin-bcms). See [its README](./medusa-plugin-bcms/README.md) for full setup, options, and the admin/store API surface.
 
-2. **Use in a Medusa app**
-   See [medusa-plugin-bcms/README.md](./medusa-plugin-bcms/README.md) for:
-   - Publishing the plugin locally (`npx medusa plugin:publish`)
-   - Adding it to your app (`npx medusa plugin:add medusa-plugin-bcms`)
-   - Registering it in `medusa-config.ts` with `BCMS_API_KEY`
-   - Developing with `npx medusa plugin:develop`
+## Quick local dev loop
 
-3. **Try the admin UI**
-   After the plugin is installed and the app is running:
-   - `http://localhost:9000/app/bcms` – configure which BCMS templates are available.
-   - Product detail page → “BCMS content” widget – link a BCMS entry to a product.
-
+```bash
+# 1) Build and publish the plugin to the local yalc registry
 cd medusa-plugin-bcms
-npm run build
+npm install
 npx medusa plugin:publish
+
+# 2) Install it in the host app
 cd ../medusa-app
-npx medusa plugin:add medusa-plugin-bcms
+npx medusa plugin:add @thebcms/medusa-plugin
+echo "BCMS_API_KEY=your-bcms-api-key" >> .env
+
+# 3) Apply migrations (creates bcms_link, bcms_setting, and the product↔bcms_link link table)
+npx medusa db:migrate
+
+# 4) Run the host app
+npm run dev
+
+# 5) In a separate terminal, watch plugin changes
+cd ../medusa-plugin-bcms
+npx medusa plugin:develop
+```
+
+Then open:
+
+- `http://localhost:9000/app/settings/bcms` — configure templates, slots, run a connection test.
+- `http://localhost:9000/app/products` → any product → **BCMS content** widget — link entries to slots.
+- `http://localhost:9000/store/bcms/products/<product_id>` — storefront-facing JSON with BCMS entries resolved.
