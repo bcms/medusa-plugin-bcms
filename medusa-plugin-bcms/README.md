@@ -208,6 +208,34 @@ This plugin uses Medusa's standard plugin development flow.
    npx medusa plugin:develop
    ```
 
+## Testing
+
+The plugin ships with a Jest setup based on `@medusajs/test-utils`.
+
+```bash
+# Unit tests (pure functions; no DB required)
+npm test
+
+# Module integration tests (real Postgres + per-worker test databases)
+DB_HOST=localhost \
+DB_USERNAME=postgres \
+DB_PASSWORD=postgres \
+npm run test:integration:modules
+
+# Full local CI parity: typecheck + unit tests
+npm run test:ci
+```
+
+The integration suite uses `moduleIntegrationTestRunner` and creates one
+database per Jest worker, so the connecting Postgres user must have
+`CREATEDB` (the `postgres` superuser does by default). On a fresh local
+Postgres, run the plugin once with `npm run build` first — the runner
+loads the compiled module from `.medusa/server/...`.
+
+A GitHub Actions workflow at `.github/workflows/ci.yml` runs the
+typecheck → unit tests → plugin build pipeline on every push, plus the
+module integration tests in a job with a Postgres service container.
+
 ## Migrating from `medusa-plugin-bcms` (pre-0.1.0)
 
 Earlier prototype versions stored the BCMS mapping on `product.metadata.bcms_entry`. This release replaces that with a proper data model and module link, so the metadata mapping is **not** automatically migrated. Re-link your products through the new product widget after upgrading.

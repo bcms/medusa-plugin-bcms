@@ -47,7 +47,11 @@
     "build": "medusa plugin:build",
     "dev": "medusa plugin:develop",
     "publish:local": "medusa plugin:publish",
-    "prepublishOnly": "medusa plugin:build"
+    "prepublishOnly": "medusa plugin:build",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --testPathPattern=src/.*\\.spec\\.ts$",
+    "test:integration:modules": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testPathPattern=integration-tests/modules/.*\\.spec\\.ts$",
+    "test:ci": "npm run typecheck && npm run test"
   },
   "peerDependencies": {
     "@medusajs/admin-sdk": "^2.12",
@@ -65,5 +69,5 @@
   "dependencies": {
     "@thebcms/client": "^2.0.1"
   },
-  "yalcSig": "3fcb4c7038b9942667bbcecf41b63fa1"
+  "yalcSig": "9d5f579656e4fbb5c62ff5a6e98e5002"
 }
