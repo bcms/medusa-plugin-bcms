@@ -1,16 +1,14 @@
 import type { BcmsLinkPayload, BcmsSettingPayload } from "../../../modules/bcms/types"
+import { resolveSlotSettings } from "../../../modules/bcms/settings-utils"
 
 export function serializeSetting(setting: any): BcmsSettingPayload {
+  const resolved = resolveSlotSettings(setting)
+
   return {
     id: setting.id,
-    enabled_templates: Array.isArray(setting.enabled_templates)
-      ? (setting.enabled_templates as string[])
-      : [],
-    default_slots:
-      Array.isArray(setting.default_slots) && setting.default_slots.length > 0
-        ? (setting.default_slots as string[])
-        : ["default"],
-    auto_create_on_product: !!setting.auto_create_on_product,
+    enabled_templates: resolved.enabled_templates,
+    default_slots: resolved.default_slots,
+    slot_templates: resolved.slot_templates,
     last_test_at: setting.last_test_at ?? null,
     last_test_status: (setting.last_test_status ?? null) as
       | "ok"
@@ -41,18 +39,6 @@ const TITLE_KEYS = [
   "slug",
 ]
 
-/**
- * Best-effort extraction of a human-readable title from a BCMS entry.
- *
- * Handles both shapes that the BCMS client may return:
- *   - parsed (default for `entry.getAll`):
- *       meta: { en: { title: "Foo", slug: "foo", ... }, de: { ... } }
- *   - raw / un-parsed:
- *       meta: [{ lng: "en", props: [{ id, data }] }]
- *
- * Looks at common title-like prop names first, then falls back to the first
- * non-empty string prop, then to the entry slug, then to its id.
- */
 export function pickEntryTitle(
   entry: any,
   language?: string | null

@@ -31,9 +31,8 @@ export type BcmsLink = {
 
 export type BcmsSetting = {
   id: string
-  enabled_templates: string[]
   default_slots: string[]
-  auto_create_on_product: boolean
+  slot_templates: Record<string, string[]>
   last_test_at: string | Date | null
   last_test_status: "ok" | "error" | null
   last_test_message: string | null

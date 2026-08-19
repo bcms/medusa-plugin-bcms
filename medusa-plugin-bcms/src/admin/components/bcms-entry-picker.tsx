@@ -53,8 +53,14 @@ export const BcmsEntryPicker = ({
   const [selected, setSelected] = useState<string>(initialEntryId ?? "")
 
   useEffect(() => {
+    const names = new Set(allowed.map((t) => t.name))
     if (template === "" && allowed.length > 0) {
       setTemplate(allowed[0].name)
+      return
+    }
+    if (template && allowed.length > 0 && !names.has(template)) {
+      setTemplate(allowed[0].name)
+      setSelected("")
     }
   }, [allowed, template])
 
@@ -97,27 +103,37 @@ export const BcmsEntryPicker = ({
         <Text size="small" weight="plus">
           Template
         </Text>
-        <Select value={template} onValueChange={setTemplate}>
-          <Select.Trigger>
-            <Select.Value placeholder="Select a BCMS template" />
-          </Select.Trigger>
-          <Select.Content>
-            {allowed.length === 0 ? (
-              <Select.Item value="__no_templates__" disabled>
-                No templates available
-              </Select.Item>
-            ) : (
-              allowed.map((tpl) => (
+        {allowed.length === 0 ? (
+          <Text size="small" className="text-ui-fg-subtle">
+            No templates assigned to this slot. Check Settings &rsaquo; BCMS.
+          </Text>
+        ) : allowed.length === 1 ? (
+          <Text size="small" className="text-ui-fg-subtle">
+            {allowed[0].label ?? allowed[0].name}
+          </Text>
+        ) : (
+          <Select
+            value={template}
+            onValueChange={(value) => {
+              setTemplate(value)
+              setSelected("")
+            }}
+          >
+            <Select.Trigger>
+              <Select.Value placeholder="Select a BCMS template" />
+            </Select.Trigger>
+            <Select.Content>
+              {allowed.map((tpl) => (
                 <Select.Item
                   key={tpl._id ?? tpl.id ?? tpl.name}
                   value={tpl.name}
                 >
                   {tpl.label ?? tpl.name}
                 </Select.Item>
-              ))
-            )}
-          </Select.Content>
-        </Select>
+              ))}
+            </Select.Content>
+          </Select>
+        )}
       </div>
 
       <div className="flex flex-col gap-y-1">

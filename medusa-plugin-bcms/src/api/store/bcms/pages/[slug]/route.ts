@@ -5,13 +5,8 @@ import type {
 import { MedusaError } from "@medusajs/framework/utils"
 import { BCMS_MODULE } from "../../../../../modules/bcms"
 import type BcmsModuleService from "../../../../../modules/bcms/service"
+import { assertStoreTemplateAllowed } from "../../utils"
 
-/**
- * GET /store/bcms/pages/:slug?template=<template_name>
- *
- * Storefront-facing read of a single BCMS entry by slug. Useful for
- * standalone CMS pages (e.g. /about, /faq, blog post slugs).
- */
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const { slug } = req.params as { slug: string }
   const template = req.query.template as string | undefined
@@ -30,6 +25,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       "BCMS API key is not configured on the server."
     )
   }
+
+  await assertStoreTemplateAllowed(bcms, template)
 
   try {
     const entry = await bcms.getBcmsEntryBySlug({ slug, template })

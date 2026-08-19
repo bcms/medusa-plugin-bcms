@@ -1,24 +1,12 @@
 import { moduleIntegrationTestRunner } from "@medusajs/test-utils"
 import path from "path"
+import { BCMS_SETTING_ID } from "../../src/modules/bcms/types"
 import type BcmsModuleService from "../../src/modules/bcms/service"
 
 const RESOLVE_PATH = path.resolve(
   __dirname,
   "../../.medusa/server/src/modules/bcms"
 )
-
-// These tests exercise the BCMS module against a real Postgres instance.
-// They require the plugin to have been built (`npm run build`) so the
-// compiled module exists at `.medusa/server/src/modules/bcms`.
-//
-// `@medusajs/test-utils` connects via DB_HOST / DB_PORT / DB_USERNAME /
-// DB_PASSWORD env vars and creates a fresh database per Jest worker, so
-// the user must have CREATEDB privileges. Locally, the simplest setup is:
-//
-//   DB_HOST=localhost \
-//   DB_USERNAME=postgres \
-//   DB_PASSWORD=postgres \
-//   npm run test:integration:modules
 
 moduleIntegrationTestRunner<BcmsModuleService>({
   moduleName: "bcms",
@@ -28,10 +16,10 @@ moduleIntegrationTestRunner<BcmsModuleService>({
       it("creates a default settings row on first call", async () => {
         const setting = await service.getOrCreateBcmsSetting()
 
-        expect(setting.id).toEqual(expect.any(String))
+        expect(setting.id).toBe(BCMS_SETTING_ID)
         expect(setting.enabled_templates).toEqual([])
-        expect(setting.default_slots).toEqual(["default"])
-        expect(setting.auto_create_on_product).toBe(false)
+        expect(setting.default_slots).toEqual([])
+        expect(setting.slot_templates).toEqual({})
         expect(setting.last_test_at).toBeNull()
         expect(setting.last_test_status).toBeNull()
       })
@@ -40,19 +28,24 @@ moduleIntegrationTestRunner<BcmsModuleService>({
         const first = await service.getOrCreateBcmsSetting()
         const second = await service.getOrCreateBcmsSetting()
 
+        expect(first.id).toBe(BCMS_SETTING_ID)
         expect(second.id).toBe(first.id)
 
         const all = await (service as any).listBcmsSettings()
         expect(all).toHaveLength(1)
       })
 
-      it("persists updates to enabled_templates and default_slots", async () => {
+      it("persists updates to enabled_templates, default_slots, and slot_templates", async () => {
         const initial = await service.getOrCreateBcmsSetting()
         await (service as any).updateBcmsSettings([
           {
             id: initial.id,
             enabled_templates: ["blog", "page"],
             default_slots: ["default", "rich_description"],
+            slot_templates: {
+              default: ["page"],
+              rich_description: ["blog"],
+            },
           },
         ])
 
@@ -63,6 +56,10 @@ moduleIntegrationTestRunner<BcmsModuleService>({
           "default",
           "rich_description",
         ])
+        expect(reloaded.slot_templates).toEqual({
+          default: ["page"],
+          rich_description: ["blog"],
+        })
       })
     })
 

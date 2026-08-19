@@ -5,7 +5,7 @@ import type BcmsModuleService from "../../modules/bcms/service"
 export type CreateBcmsLinkStepInput = {
   entry_id: string
   template_name: string
-  slot?: string
+  slot: string
   language?: string | null
   position?: number
   metadata?: Record<string, unknown> | null
@@ -19,7 +19,7 @@ export const createBcmsLinkStep = createStep(
       {
         entry_id: input.entry_id,
         template_name: input.template_name,
-        slot: input.slot ?? "default",
+        slot: input.slot,
         language: input.language ?? null,
         position: input.position ?? 0,
         metadata: input.metadata ?? null,

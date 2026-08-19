@@ -1,5 +1,3 @@
-// Note: `@thebcms/client` is globally stubbed via jest.config.js
-// `moduleNameMapper` to avoid pulling in its ESM-only uuid dependency.
 import BcmsModuleService from "../service"
 
 describe("BcmsModuleService.validateOptions", () => {

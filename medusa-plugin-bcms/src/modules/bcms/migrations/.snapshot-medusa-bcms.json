@@ -160,15 +160,15 @@
           "nullable": false,
           "mappedType": "array"
         },
-        "auto_create_on_product": {
-          "name": "auto_create_on_product",
-          "type": "boolean",
+        "slot_templates": {
+          "name": "slot_templates",
+          "type": "jsonb",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "default": "false",
-          "mappedType": "boolean"
+          "default": "'{}'",
+          "mappedType": "json"
         },
         "last_test_at": {
           "name": "last_test_at",

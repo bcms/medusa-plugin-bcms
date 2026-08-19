@@ -5,13 +5,8 @@ import type {
 import { MedusaError } from "@medusajs/framework/utils"
 import { BCMS_MODULE } from "../../../../../modules/bcms"
 import type BcmsModuleService from "../../../../../modules/bcms/service"
+import { assertStoreTemplateAllowed } from "../../utils"
 
-/**
- * GET /store/bcms/entries/:id?template=<template_name>
- *
- * Storefront-facing read of a single BCMS entry by id. The `template` query
- * parameter is required because BCMS scopes entries to a template.
- */
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params as { id: string }
   const template = req.query.template as string | undefined
@@ -30,6 +25,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       "BCMS API key is not configured on the server."
     )
   }
+
+  await assertStoreTemplateAllowed(bcms, template)
 
   try {
     const entry = await bcms.getBcmsEntryById({ entryId: id, template })

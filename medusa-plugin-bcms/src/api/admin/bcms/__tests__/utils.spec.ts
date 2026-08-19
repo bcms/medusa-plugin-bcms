@@ -148,7 +148,6 @@ describe("serializeSetting", () => {
       id: "set_1",
       enabled_templates: ["blog", "page"],
       default_slots: ["default", "rich"],
-      auto_create_on_product: 1,
       last_test_at: "2026-01-01T00:00:00.000Z",
       last_test_status: "ok",
       last_test_message: "Connected",
@@ -157,29 +156,49 @@ describe("serializeSetting", () => {
     expect(out.id).toBe("set_1")
     expect(out.enabled_templates).toEqual(["blog", "page"])
     expect(out.default_slots).toEqual(["default", "rich"])
-    expect(out.auto_create_on_product).toBe(true)
+    expect(out.slot_templates).toEqual({
+      default: ["blog", "page"],
+      rich: ["blog", "page"],
+    })
     expect(out.last_test_at).toBe("2026-01-01T00:00:00.000Z")
     expect(out.last_test_status).toBe("ok")
     expect(out.last_test_message).toBe("Connected")
   })
 
-  it("forces default_slots to ['default'] when empty or missing", () => {
+  it("keeps default_slots empty when missing", () => {
     expect(
       serializeSetting({ id: "s", enabled_templates: [], default_slots: [] })
         .default_slots
-    ).toEqual(["default"])
+    ).toEqual([])
     expect(
       serializeSetting({ id: "s", enabled_templates: [] }).default_slots
-    ).toEqual(["default"])
+    ).toEqual([])
+  })
+
+  it("keeps per-slot template lists and derives the store allowlist", () => {
+    const out = serializeSetting({
+      id: "s",
+      enabled_templates: ["stale"],
+      default_slots: ["default", "quote"],
+      slot_templates: {
+        default: ["project"],
+        quote: ["blog"],
+      },
+    })
+    expect(out.slot_templates).toEqual({
+      default: ["project"],
+      quote: ["blog"],
+    })
+    expect(out.enabled_templates).toEqual(["project", "blog"])
   })
 
   it("normalizes nullable fields", () => {
     const out = serializeSetting({
       id: "s",
       enabled_templates: undefined,
-      default_slots: ["default"],
     })
     expect(out.enabled_templates).toEqual([])
+    expect(out.slot_templates).toEqual({})
     expect(out.last_test_at).toBeNull()
     expect(out.last_test_status).toBeNull()
     expect(out.last_test_message).toBeNull()

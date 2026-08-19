@@ -8,6 +8,7 @@ export default Module(BCMS_MODULE, {
 })
 
 export { BcmsModuleService }
+export { BCMS_SETTING_ID } from "./types"
 export type {
   BcmsModuleOptions,
   BcmsConnectionStatus,

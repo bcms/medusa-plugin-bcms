@@ -92,8 +92,8 @@ const BcmsSettingsPage = () => {
 
   const setting = settingsQuery.data?.setting
   const hasApiKey = settingsQuery.data?.has_api_key ?? false
-  const enabled = setting?.enabled_templates ?? []
-  const slots = setting?.default_slots ?? ["default"]
+  const slots = setting?.default_slots ?? []
+  const slotTemplates = setting?.slot_templates ?? {}
 
   const [slotInput, setSlotInput] = useState("")
 
@@ -111,12 +111,23 @@ const BcmsSettingsPage = () => {
     [templatesQuery.data?.templates]
   )
 
-  const toggleTemplate = (templateName: string) => {
+  const persistSlots = (
+    nextSlots: string[],
+    nextTemplates: Record<string, string[]>
+  ) => {
+    updateSettings.mutate({
+      default_slots: nextSlots,
+      slot_templates: nextTemplates,
+    })
+  }
+
+  const toggleSlotTemplate = (slot: string, templateName: string) => {
     if (!setting) return
-    const next = enabled.includes(templateName)
-      ? enabled.filter((t) => t !== templateName)
-      : [...enabled, templateName]
-    updateSettings.mutate({ enabled_templates: next })
+    const current = slotTemplates[slot] ?? []
+    const nextList = current.includes(templateName)
+      ? current.filter((t) => t !== templateName)
+      : [...current, templateName]
+    persistSlots(slots, { ...slotTemplates, [slot]: nextList })
   }
 
   const addSlot = () => {
@@ -125,18 +136,17 @@ const BcmsSettingsPage = () => {
       setSlotInput("")
       return
     }
-    updateSettings.mutate({ default_slots: [...slots, trimmed] })
+    persistSlots([...slots, trimmed], { ...slotTemplates, [trimmed]: [] })
     setSlotInput("")
   }
 
   const removeSlot = (slot: string) => {
-    if (slot === "default") {
-      toast.info('The "default" slot is required and cannot be removed.')
-      return
-    }
-    updateSettings.mutate({
-      default_slots: slots.filter((s) => s !== slot),
-    })
+    const nextTemplates = { ...slotTemplates }
+    delete nextTemplates[slot]
+    persistSlots(
+      slots.filter((s) => s !== slot),
+      nextTemplates
+    )
   }
 
   return (
@@ -145,9 +155,8 @@ const BcmsSettingsPage = () => {
         <div>
           <Heading level="h2">BCMS</Heading>
           <Text size="small" className="text-ui-fg-subtle">
-            Configure your BCMS integration. Pick which BCMS templates can be
-            attached to Medusa entities and which slots are available on the
-            product widget.
+            Configure your BCMS integration. Each slot on the product widget
+            has its own list of templates you can pick entries from.
           </Text>
         </div>
       </div>
@@ -202,96 +211,112 @@ const BcmsSettingsPage = () => {
 
       <div className="px-6 py-4 flex flex-col gap-y-3">
         <Text size="small" weight="plus">
-          Enabled templates
-        </Text>
-        <Text size="small" className="text-ui-fg-subtle">
-          Templates listed here will be available when picking BCMS entries on
-          a product. If none are selected, all templates are available.
-        </Text>
-
-        {settingsQuery.isLoading || templatesQuery.isLoading ? (
-          <Text size="small" className="text-ui-fg-subtle">
-            Loading BCMS templates&hellip;
-          </Text>
-        ) : !hasApiKey ? (
-          <Text size="small" className="text-ui-fg-subtle">
-            Configure the BCMS API key to load templates.
-          </Text>
-        ) : templatesQuery.isError ? (
-          <Text size="small" className="text-ui-fg-subtle">
-            Failed to load templates.{" "}
-            {(templatesQuery.error as any)?.message ?? ""}
-          </Text>
-        ) : sortedTemplates.length === 0 ? (
-          <Text size="small" className="text-ui-fg-subtle">
-            No templates were found in this BCMS instance.
-          </Text>
-        ) : (
-          <div className="flex flex-col gap-y-2">
-            {sortedTemplates.map((tpl) => (
-              <label
-                key={tpl._id ?? tpl.id ?? tpl.name}
-                className="flex items-start gap-x-2 cursor-pointer select-none"
-              >
-                <Checkbox
-                  checked={enabled.includes(tpl.name)}
-                  onCheckedChange={() => toggleTemplate(tpl.name)}
-                  disabled={updateSettings.isPending}
-                />
-                <div className="flex flex-col">
-                  <Text size="small" weight="plus">
-                    {tpl.label ?? tpl.name}
-                  </Text>
-                  {tpl.name && tpl.label && tpl.label !== tpl.name && (
-                    <Text size="small" className="text-ui-fg-subtle">
-                      {tpl.name}
-                    </Text>
-                  )}
-                  {tpl.desc && (
-                    <Text size="small" className="text-ui-fg-subtle">
-                      {tpl.desc}
-                    </Text>
-                  )}
-                </div>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="px-6 py-4 flex flex-col gap-y-3">
-        <Text size="small" weight="plus">
           Slots
         </Text>
         <Text size="small" className="text-ui-fg-subtle">
-          Slots let you attach multiple BCMS entries per product, each in a
-          named role (e.g. <code>rich_description</code>,{" "}
-          <code>recommended_blogs</code>). The <code>default</code> slot is
-          always available.
+          Each slot is a named product section (e.g.{" "}
+          <code>rich_description</code>, <code>recommended_blogs</code>) with
+          its own template allowlist. Leave every template unchecked in a slot
+          to allow all of them.
         </Text>
 
-        <div className="flex flex-wrap gap-2">
-          {slots.map((slot) => (
-            <Badge
-              key={slot}
-              size="small"
-              color={slot === "default" ? "grey" : "blue"}
-              className="flex items-center gap-x-1"
-            >
-              <span>{slot}</span>
-              {slot !== "default" && (
-                <button
-                  type="button"
-                  onClick={() => removeSlot(slot)}
-                  className="ml-1 text-ui-fg-subtle hover:text-ui-fg-base"
-                  aria-label={`Remove slot ${slot}`}
+        {settingsQuery.isLoading ? (
+          <Text size="small" className="text-ui-fg-subtle">
+            Loading slots&hellip;
+          </Text>
+        ) : slots.length === 0 ? (
+          <Text size="small" className="text-ui-fg-subtle">
+            No slots yet. Add one to start attaching BCMS entries to products.
+          </Text>
+        ) : (
+          <div className="flex flex-col gap-y-3">
+            {slots.map((slot) => {
+              const allowed = slotTemplates[slot] ?? []
+              return (
+                <div
+                  key={slot}
+                  className="flex flex-col gap-y-3 rounded-md border border-ui-border-base p-3"
                 >
-                  &times;
-                </button>
-              )}
-            </Badge>
-          ))}
-        </div>
+                  <div className="flex items-center justify-between gap-x-2">
+                    <div className="flex items-center gap-x-2">
+                      <Text size="small" weight="plus">
+                        {slot}
+                      </Text>
+                      <Badge
+                        size="2xsmall"
+                        color={allowed.length === 0 ? "grey" : "blue"}
+                      >
+                        {allowed.length === 0
+                          ? "all templates"
+                          : `${allowed.length} template${allowed.length === 1 ? "" : "s"}`}
+                      </Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      size="small"
+                      variant="secondary"
+                      onClick={() => removeSlot(slot)}
+                      disabled={updateSettings.isPending}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+
+                  {templatesQuery.isLoading ? (
+                    <Text size="small" className="text-ui-fg-subtle">
+                      Loading BCMS templates&hellip;
+                    </Text>
+                  ) : !hasApiKey ? (
+                    <Text size="small" className="text-ui-fg-subtle">
+                      Configure the BCMS API key to load templates.
+                    </Text>
+                  ) : templatesQuery.isError ? (
+                    <Text size="small" className="text-ui-fg-subtle">
+                      Failed to load templates.{" "}
+                      {(templatesQuery.error as any)?.message ?? ""}
+                    </Text>
+                  ) : sortedTemplates.length === 0 ? (
+                    <Text size="small" className="text-ui-fg-subtle">
+                      No templates were found in this BCMS instance.
+                    </Text>
+                  ) : (
+                    <div className="flex flex-col gap-y-2">
+                      {sortedTemplates.map((tpl) => (
+                        <label
+                          key={`${slot}-${tpl._id ?? tpl.id ?? tpl.name}`}
+                          className="flex items-start gap-x-2 cursor-pointer select-none"
+                        >
+                          <Checkbox
+                            checked={allowed.includes(tpl.name)}
+                            onCheckedChange={() =>
+                              toggleSlotTemplate(slot, tpl.name)
+                            }
+                            disabled={updateSettings.isPending}
+                          />
+                          <div className="flex flex-col">
+                            <Text size="small" weight="plus">
+                              {tpl.label ?? tpl.name}
+                            </Text>
+                            {tpl.name &&
+                              tpl.label &&
+                              tpl.label !== tpl.name && (
+                                <Text
+                                  size="small"
+                                  className="text-ui-fg-subtle"
+                                >
+                                  {tpl.name}
+                                </Text>
+                              )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         <div className="flex items-center gap-x-2">
           <Input

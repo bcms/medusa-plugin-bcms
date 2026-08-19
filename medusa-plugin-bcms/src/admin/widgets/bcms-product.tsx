@@ -73,8 +73,7 @@ const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
   const setting = settingsQuery.data?.setting
   const hasApiKey =
     settingsQuery.data?.has_api_key ?? templatesQuery.data?.has_api_key ?? false
-  const enabledTemplates = setting?.enabled_templates ?? []
-  const slots = setting?.default_slots ?? ["default"]
+  const slots = setting?.default_slots ?? []
   const templates = templatesQuery.data?.templates ?? []
 
   const links = linksQuery.data?.links ?? []
@@ -100,8 +99,6 @@ const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
     [links]
   )
 
-  // One fetch per template, regardless of how many links point at it. Resolved
-  // to a `template -> { entry_id -> title }` map for cheap lookups below.
   const templateEntriesQueries = useQueries({
     queries: linkedTemplates.map((templateName) => ({
       queryKey: ["bcms-entries", templateName] as const,
@@ -210,6 +207,13 @@ const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
 
         {hasApiKey && !linksQuery.isLoading && (
           <>
+            {slots.length === 0 && (
+              <Text size="small" className="text-ui-fg-subtle">
+                No slots configured. Add a slot in Settings &rsaquo; BCMS to
+                attach entries to this product.
+              </Text>
+            )}
+
             {slots.map((slot) => {
               const slotLinks = linksBySlot[slot] ?? []
               const isComposing = composeSlot === slot
@@ -273,7 +277,9 @@ const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
                     <div className="rounded-md border border-ui-border-base p-3">
                       <BcmsEntryPicker
                         templates={templates}
-                        enabledTemplates={enabledTemplates}
+                        enabledTemplates={
+                          setting?.slot_templates?.[slot] ?? []
+                        }
                         submitLabel="Link entry"
                         disabled={createLink.isPending}
                         onCancel={() => setComposeSlot(null)}
@@ -298,11 +304,13 @@ const BcmsProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
               )
             })}
 
-            <div className="flex items-center gap-x-2 pt-2">
-              <Text size="small" className="text-ui-fg-subtle">
-                Need another section? Add a slot in Settings &rsaquo; BCMS.
-              </Text>
-            </div>
+            {slots.length > 0 && (
+              <div className="flex items-center gap-x-2 pt-2">
+                <Text size="small" className="text-ui-fg-subtle">
+                  Need another section? Add a slot in Settings &rsaquo; BCMS.
+                </Text>
+              </div>
+            )}
           </>
         )}
       </div>

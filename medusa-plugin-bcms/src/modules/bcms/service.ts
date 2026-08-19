@@ -3,16 +3,15 @@ import { MedusaService } from "@medusajs/framework/utils"
 import { Client } from "@thebcms/client"
 import BcmsLink from "./models/bcms-link"
 import BcmsSetting from "./models/bcms-setting"
-import type {
-  BcmsConnectionStatus,
-  BcmsModuleOptions,
+import {
+  BCMS_SETTING_ID,
+  type BcmsConnectionStatus,
+  type BcmsModuleOptions,
 } from "./types"
 
 type InjectedDependencies = {
   logger: Logger
 }
-
-const SETTINGS_DEFAULT_SLOTS = ["default"]
 
 class BcmsModuleService extends MedusaService({
   BcmsLink,
@@ -23,8 +22,6 @@ class BcmsModuleService extends MedusaService({
   protected readonly client_?: Client
 
   static validateOptions(options: BcmsModuleOptions) {
-    // apiKey is optional so the plugin can boot without it (for first-run UX).
-    // Validation of the key happens lazily via testConnection().
     if (
       options.apiKey !== undefined &&
       typeof options.apiKey !== "string"
@@ -39,7 +36,7 @@ class BcmsModuleService extends MedusaService({
     { logger }: InjectedDependencies,
     options: BcmsModuleOptions = {}
   ) {
-    // @ts-ignore - MedusaService base class accepts a container/options pair at runtime.
+    // @ts-ignore
     super(...arguments)
     this.logger_ = logger
     this.options_ = options
@@ -55,7 +52,7 @@ class BcmsModuleService extends MedusaService({
     this.client_ = new Client({
       apiKey: this.options_.apiKey,
       cmsOrigin: this.options_.cmsOrigin,
-      useMemCache: this.options_.useMemCache ?? false,
+      useMemCache: this.options_.useMemCache ?? true,
       debug: this.options_.debug ?? false,
     })
     this.logger_.info(
@@ -63,21 +60,9 @@ class BcmsModuleService extends MedusaService({
     )
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                            Plugin configuration                            */
-  /* -------------------------------------------------------------------------- */
-
   hasApiKey(): boolean {
     return !!this.client_
   }
-
-  getOptions(): BcmsModuleOptions {
-    return this.options_
-  }
-
-  /* -------------------------------------------------------------------------- */
-  /*                                 BCMS calls                                 */
-  /* -------------------------------------------------------------------------- */
 
   protected requireClient(): Client {
     if (!this.client_) {
@@ -88,10 +73,6 @@ class BcmsModuleService extends MedusaService({
     return this.client_
   }
 
-  /**
-   * Verify connectivity to the BCMS instance. Returns a structured result
-   * instead of throwing so callers can show user-friendly errors.
-   */
   async testConnection(): Promise<BcmsConnectionStatus> {
     if (!this.client_) {
       return {
@@ -113,21 +94,10 @@ class BcmsModuleService extends MedusaService({
     }
   }
 
-  // NOTE: do not name BCMS-API methods `list*` — `MedusaService` reserves
-  // `list${Pluralize<EntityName>}` for its auto-generated CRUD methods, and
-  // adding a colliding method triggers TS2411 on the service class.
   async getBcmsTemplates(skipCache = false) {
     return this.requireClient().template.getAll(skipCache)
   }
 
-  /**
-   * Fetch all entries for a given template.
-   *
-   * BCMS instances rarely contain more than a couple hundred entries per
-   * template, so we load the full list and let the admin UI filter/sort
-   * client-side. Keeping this method paging-free keeps the contract simple
-   * and the admin code straightforward.
-   */
   async getBcmsEntries(input: { template: string; skipCache?: boolean }) {
     const { template, skipCache = false } = input
     const entries = await this.requireClient().entry.getAll(
@@ -161,33 +131,39 @@ class BcmsModuleService extends MedusaService({
     )
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                              Settings helper                               */
-  /* -------------------------------------------------------------------------- */
-
-  /**
-   * Always returns a valid settings row, creating one with sensible defaults
-   * on first call.
-   */
   async getOrCreateBcmsSetting() {
     const [existing] = await this.listBcmsSettings(
-      {},
-      { take: 1, order: { created_at: "ASC" } }
+      { id: BCMS_SETTING_ID },
+      { take: 1 }
     )
     if (existing) {
       return existing
     }
-    const [created] = await this.createBcmsSettings([
-      {
-        enabled_templates: [],
-        default_slots: SETTINGS_DEFAULT_SLOTS,
-        auto_create_on_product: false,
-        last_test_at: null,
-        last_test_status: null,
-        last_test_message: null,
-      },
-    ])
-    return created
+    try {
+      const [created] = await this.createBcmsSettings([
+        {
+          id: BCMS_SETTING_ID,
+          enabled_templates: [],
+          default_slots: [],
+          slot_templates: {},
+          last_test_at: null,
+          last_test_status: null,
+          last_test_message: null,
+        },
+      ])
+      return created
+    } catch {
+      const [winner] = await this.listBcmsSettings(
+        { id: BCMS_SETTING_ID },
+        { take: 1 }
+      )
+      if (winner) {
+        return winner
+      }
+      throw new Error(
+        "[@thebcms/medusa-plugin] Failed to create BCMS settings singleton."
+      )
+    }
   }
 }
 

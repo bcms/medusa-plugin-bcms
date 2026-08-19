@@ -12,7 +12,7 @@ export type CreateProductBcmsLinkInput = {
   product_id: string
   entry_id: string
   template_name: string
-  slot?: string
+  slot: string
   language?: string | null
   position?: number
   metadata?: Record<string, unknown> | null

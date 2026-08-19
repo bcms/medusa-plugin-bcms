@@ -16,8 +16,12 @@
     ".medusa/server",
     "package.json",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./package.json": "./package.json",
     "./workflows": "./.medusa/server/src/workflows/index.js",
@@ -54,20 +58,20 @@
     "test:ci": "npm run typecheck && npm run test"
   },
   "peerDependencies": {
-    "@medusajs/admin-sdk": "^2.12",
-    "@medusajs/cli": "^2.12",
-    "@medusajs/framework": "^2.12",
-    "@medusajs/icons": "^2.12",
-    "@medusajs/medusa": "^2.12",
-    "@medusajs/test-utils": "^2.12",
-    "@medusajs/ui": "^4.0"
+    "@medusajs/admin-sdk": "^2.19",
+    "@medusajs/cli": "^2.19",
+    "@medusajs/framework": "^2.19",
+    "@medusajs/icons": "^2.19",
+    "@medusajs/medusa": "^2.19",
+    "@medusajs/test-utils": "^2.19",
+    "@medusajs/ui": "^4.2"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "packageManager": "npm@11.5.2",
   "dependencies": {
-    "@thebcms/client": "^2.0.1"
+    "@thebcms/client": "^2.0.3"
   },
-  "yalcSig": "9d5f579656e4fbb5c62ff5a6e98e5002"
+  "yalcSig": "ba6119ccc6fa1a00dc6b77ea573270b0"
 }

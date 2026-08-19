@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "@medusajs/framework/zod"
 
 export const ListBcmsTemplatesSchema = z.object({
   skip_cache: z
@@ -30,7 +30,7 @@ export const CreateBcmsLinkSchema = z.object({
   product_id: z.string().min(1),
   entry_id: z.string().min(1),
   template_name: z.string().min(1),
-  slot: z.string().min(1).optional(),
+  slot: z.string().min(1),
   language: z.string().min(1).nullable().optional(),
   position: z.number().int().min(0).optional(),
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),
@@ -48,8 +48,7 @@ export const UpdateBcmsLinkSchema = z.object({
 export type UpdateBcmsLinkSchema = z.infer<typeof UpdateBcmsLinkSchema>
 
 export const UpdateBcmsSettingSchema = z.object({
-  enabled_templates: z.array(z.string().min(1)).optional(),
   default_slots: z.array(z.string().min(1)).optional(),
-  auto_create_on_product: z.boolean().optional(),
+  slot_templates: z.record(z.string().min(1), z.array(z.string().min(1))).optional(),
 })
 export type UpdateBcmsSettingSchema = z.infer<typeof UpdateBcmsSettingSchema>

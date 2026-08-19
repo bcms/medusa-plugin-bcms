@@ -16,8 +16,12 @@
     ".medusa/server",
     "package.json",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./package.json": "./package.json",
     "./workflows": "./.medusa/server/src/workflows/index.js",
@@ -54,14 +58,14 @@
     "test:ci": "npm run typecheck && npm run test"
   },
   "devDependencies": {
-    "@medusajs/admin-sdk": "2.12.4",
-    "@medusajs/cli": "2.12.4",
-    "@medusajs/framework": "2.12.4",
-    "@medusajs/icons": "2.12.4",
-    "@medusajs/js-sdk": "2.12.4",
-    "@medusajs/medusa": "2.12.4",
-    "@medusajs/test-utils": "2.12.4",
-    "@medusajs/ui": "4.0.25",
+    "@medusajs/admin-sdk": "2.19.0",
+    "@medusajs/cli": "2.19.0",
+    "@medusajs/framework": "2.19.0",
+    "@medusajs/icons": "2.19.0",
+    "@medusajs/js-sdk": "2.19.0",
+    "@medusajs/medusa": "2.19.0",
+    "@medusajs/test-utils": "2.19.0",
+    "@medusajs/ui": "4.2.1",
     "@swc/core": "^1.7.28",
     "@swc/jest": "^0.2.39",
     "@tanstack/react-query": "5.64.2",
@@ -76,24 +80,23 @@
     "react-dom": "^18.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2",
-    "vite": "^5.2.11",
-    "yalc": "^1.0.0-pre.53",
-    "zod": "^3.22.0"
+    "vite": "^7.3.6",
+    "yalc": "^1.0.0-pre.53"
   },
   "peerDependencies": {
-    "@medusajs/admin-sdk": "^2.12",
-    "@medusajs/cli": "^2.12",
-    "@medusajs/framework": "^2.12",
-    "@medusajs/icons": "^2.12",
-    "@medusajs/medusa": "^2.12",
-    "@medusajs/test-utils": "^2.12",
-    "@medusajs/ui": "^4.0"
+    "@medusajs/admin-sdk": "^2.19",
+    "@medusajs/cli": "^2.19",
+    "@medusajs/framework": "^2.19",
+    "@medusajs/icons": "^2.19",
+    "@medusajs/medusa": "^2.19",
+    "@medusajs/test-utils": "^2.19",
+    "@medusajs/ui": "^4.2"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "packageManager": "npm@11.5.2",
   "dependencies": {
-    "@thebcms/client": "^2.0.1"
+    "@thebcms/client": "^2.0.3"
   }
 }

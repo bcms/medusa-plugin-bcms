@@ -9,15 +9,6 @@ import {
 import { BCMS_MODULE } from "../../../../../modules/bcms"
 import type BcmsModuleService from "../../../../../modules/bcms/service"
 
-/**
- * GET /store/bcms/products/:id
- *
- * Returns the Medusa product (with its BCMS link rows) plus the resolved
- * BCMS entry payloads grouped by `slot`.
- *
- * Requires the storefront's publishable API key (handled automatically by the
- * Medusa JS SDK).
- */
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params as { id: string }
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
@@ -86,10 +77,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return a.position - b.position
   })
 
-  const grouped: Record<string, typeof enrichedLinks> = {}
+  const slots: Record<string, typeof enrichedLinks> = {}
   for (const link of enrichedLinks) {
-    grouped[link.slot] = grouped[link.slot] ?? []
-    grouped[link.slot].push(link)
+    slots[link.slot] = slots[link.slot] ?? []
+    slots[link.slot].push(link)
   }
 
   res.json({
@@ -102,9 +93,6 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       thumbnail: (product as any).thumbnail ?? null,
       status: (product as any).status,
     },
-    bcms: {
-      links: enrichedLinks,
-      by_slot: grouped,
-    },
+    bcms: { slots },
   })
 }

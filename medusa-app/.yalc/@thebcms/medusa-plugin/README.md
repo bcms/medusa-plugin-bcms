@@ -4,18 +4,18 @@ Standalone [Medusa v2](https://docs.medusajs.com/) plugin that integrates [BCMS]
 
 It lets merchants:
 
-- Pick which BCMS templates can be attached to Medusa entities (server-side, persisted in the database).
-- Attach **multiple BCMS entries per product**, grouped by **slot** (e.g. `default`, `rich_description`, `recommended_blogs`).
+- Pick which BCMS templates can be attached to **products**, per slot (server-side, persisted in the database). Collections, categories, and other entities are not linked in this release.
+- Attach **multiple BCMS entries per product**, grouped by **slot** (e.g. `rich_description`, `recommended_blogs`).
 - Read those entries fully resolved through a Storefront API endpoint, so a Next.js frontend can render BCMS rich text or a list of recommended blog posts under any product.
 
 ## Status
 
-`v0.1.0` — first standalone release. Single-product slot model, settings persisted in DB, storefront read endpoints, multi-entry widget.
+`v0.1.0` — first standalone release. Products-only slot model, settings persisted in DB, storefront read endpoints, multi-entry widget.
 
 ## Requirements
 
-- Medusa `^2.12`
-- Node 20+
+- Medusa `^2.19`
+- Node `>=20.19.0` (or `^22.12`)
 - A BCMS instance with an API key
 
 ## Install
@@ -46,7 +46,7 @@ module.exports = defineConfig({
         apiKey: process.env.BCMS_API_KEY,
         // optional:
         // cmsOrigin: "https://app.thebcms.com",
-        // useMemCache: true,
+        // useMemCache: false, // default is true; set false for live preview
         // debug: false,
       },
     },
@@ -66,7 +66,7 @@ npx medusa db:migrate
 | ------------- | --------- | ----------------------------- | -------------------------------------------------------------------- |
 | `apiKey`      | `string`  | —                             | BCMS API key. The plugin loads without one but BCMS calls will fail. |
 | `cmsOrigin`   | `string`  | BCMS default                  | Origin of your BCMS instance.                                        |
-| `useMemCache` | `boolean` | `false`                       | Enable in-memory caching in the BCMS client.                         |
+| `useMemCache` | `boolean` | `true`                        | In-memory cache in the BCMS client. Set `false` for live preview.    |
 | `debug`       | `boolean` | `false`                       | Verbose BCMS client logs.                                            |
 
 ## Admin UX
@@ -75,11 +75,10 @@ After registering the plugin, you'll find:
 
 - **Settings → BCMS** — `http://localhost:9000/app/settings/bcms`
   - Connection badge + "Test connection" button.
-  - Multi-select of BCMS templates that should be available on resources.
-  - Slot manager (`default` is always present; add named slots like `recommended_blogs`).
+  - Slot manager: add named slots (e.g. `recommended_blogs`), each with its own template allowlist. Leave every template unchecked in a slot to allow all of them. There are no slots until you add one.
 - **Products → [any product] → "BCMS content" widget**
   - One section per slot defined in Settings.
-  - Pick BCMS entries with debounced template + search dropdowns.
+  - Pick from that slot's templates, then pick an entry by title.
   - Multiple entries per slot, removable individually.
 
 ## API
@@ -102,9 +101,11 @@ After registering the plugin, you'll find:
 
 | Method | Path                                            | Description                                              |
 | ------ | ----------------------------------------------- | -------------------------------------------------------- |
-| GET    | `/store/bcms/products/:id`                       | Medusa product + resolved BCMS entries grouped by slot.  |
+| GET    | `/store/bcms/products/:id`                       | Medusa product + resolved BCMS entries in `bcms.slots`.  |
 | GET    | `/store/bcms/entries/:id?template=NAME`          | Single BCMS entry by id.                                 |
 | GET    | `/store/bcms/pages/:slug?template=NAME`          | Single BCMS entry by slug (great for blog posts/pages).  |
+
+`GET /store/bcms/entries/:id` and `GET /store/bcms/pages/:slug` only resolve templates assigned to at least one slot. If any slot still allows every template (its list is empty), every template is allowed. A request for a template outside the allowlist returns **404**. Product-linked entries on `/store/bcms/products/:id` are always returned — they were already chosen in admin.
 
 #### Storefront example (Next.js)
 
@@ -119,13 +120,15 @@ const sdk = new Medusa({
 type ProductWithBcms = {
   product: { id: string; title: string; description: string | null }
   bcms: {
-    links: Array<{
-      id: string
-      slot: string
-      entry: any | null
-      template_name: string
-    }>
-    by_slot: Record<string, Array<{ entry: any | null }>>
+    slots: Record<
+      string,
+      Array<{
+        id: string
+        slot: string
+        entry: any | null
+        template_name: string
+      }>
+    >
   }
 }
 
@@ -133,8 +136,8 @@ const { product, bcms } = await sdk.client.fetch<ProductWithBcms>(
   `/store/bcms/products/${productId}`
 )
 
-const richText = bcms.by_slot["rich_description"]?.[0]?.entry
-const recommendedBlogs = bcms.by_slot["recommended_blogs"] ?? []
+const richText = bcms.slots["rich_description"]?.[0]?.entry
+const recommendedBlogs = bcms.slots["recommended_blogs"] ?? []
 ```
 
 ## Module link & Query
@@ -207,6 +210,71 @@ This plugin uses Medusa's standard plugin development flow.
    cd medusa-plugin-bcms
    npx medusa plugin:develop
    ```
+
+## Testing
+
+The plugin ships with a Jest setup based on `@medusajs/test-utils`.
+
+```bash
+# Unit tests (pure functions; no DB required)
+npm test
+
+# Module integration tests (real Postgres + per-worker test databases)
+DB_HOST=localhost \
+DB_USERNAME=postgres \
+DB_PASSWORD=postgres \
+npm run test:integration:modules
+
+# Full local CI parity: typecheck + unit tests
+npm run test:ci
+```
+
+The integration suite uses `moduleIntegrationTestRunner` and creates one
+database per Jest worker, so the connecting Postgres user must have
+`CREATEDB` (the `postgres` superuser does by default). On a fresh local
+Postgres, run the plugin once with `npm run build` first — the runner
+loads the compiled module from `.medusa/server/...`.
+
+A GitHub Actions workflow at `.github/workflows/ci.yml` runs the
+typecheck → unit tests → plugin build pipeline on every push, plus the
+module integration tests in a job with a Postgres service container.
+
+## Smoke test (before publishing)
+
+Use the host app in this repo (`medusa-app/`) against Medusa 2.19:
+
+```bash
+cd medusa-plugin-bcms
+npx medusa plugin:publish
+
+cd ../medusa-app
+npx medusa plugin:add @thebcms/medusa-plugin
+npx medusa db:migrate
+npm run dev
+```
+
+Confirm:
+
+- Settings → BCMS: connection test, per-slot templates.
+- Product detail: link and unlink entries per slot.
+- `GET /store/bcms/products/:id` with a publishable API key.
+- With every slot restricted to an allowlist, `GET /store/bcms/entries/:id?template=` for a template on none of those lists returns 404.
+
+## Publish to npm
+
+This package is scoped (`@thebcms/...`). You need publish rights on the `@thebcms` npm org.
+
+1. Put the GitHub repo root at this plugin directory (`medusa-plugin-bcms/`) so `.github/workflows/ci.yml` runs. Do not publish the host app.
+2. `npm login` as a member of `@thebcms`.
+3. Build and publish:
+
+```bash
+cd medusa-plugin-bcms
+npx medusa plugin:build
+npm publish --access public
+```
+
+`prepublishOnly` already runs `plugin:build`. After publish, Medusa scrapes npm for the `medusa-v2` / `medusa-plugin-cms` keywords; listing on [medusajs.com/integrations](https://medusajs.com/integrations) can take about a week.
 
 ## Migrating from `medusa-plugin-bcms` (pre-0.1.0)
 
