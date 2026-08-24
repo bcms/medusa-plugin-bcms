@@ -4,13 +4,13 @@
   "description": "BCMS (https://thebcms.com) integration for Medusa v2 - link CMS entries to products and serve them through Medusa's admin and storefront APIs.",
   "author": "BCMS",
   "license": "MIT",
-  "homepage": "https://github.com/bcms/medusa-plugin",
+  "homepage": "https://github.com/bcms/medusa-plugin-bcms",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bcms/medusa-plugin.git"
+    "url": "https://github.com/bcms/medusa-plugin-bcms.git"
   },
   "bugs": {
-    "url": "https://github.com/bcms/medusa-plugin/issues"
+    "url": "https://github.com/bcms/medusa-plugin-bcms/issues"
   },
   "files": [
     ".medusa/server",

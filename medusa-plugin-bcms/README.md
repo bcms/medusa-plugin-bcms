@@ -264,7 +264,7 @@ Confirm:
 
 This package is scoped (`@thebcms/...`). You need publish rights on the `@thebcms` npm org.
 
-1. Put the GitHub repo root at this plugin directory (`medusa-plugin-bcms/`) so `.github/workflows/ci.yml` runs. Do not publish the host app.
+1. The GitHub repo is [bcms/medusa-plugin-bcms](https://github.com/bcms/medusa-plugin-bcms). CI lives in `medusa-plugin-bcms/.github/workflows/ci.yml`. Do not publish the host app.
 2. `npm login` as a member of `@thebcms`.
 3. Build and publish:
 
