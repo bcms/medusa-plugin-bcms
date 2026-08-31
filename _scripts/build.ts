@@ -11,6 +11,7 @@ export async function buildPlugin(): Promise<void> {
         stdio: 'inherit',
     });
     await fs.copy(['.medusa', 'server', 'src'], ['dist', 'src']);
+    await fs.copy('README.md', ['dist', 'README.md']);
     let packageJsonStr = await fs.readString('package.json');
     packageJsonStr = packageJsonStr.replace(/\/.medusa\/server/g, '');
     const packageJson = JSON.parse(packageJsonStr);
