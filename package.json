@@ -1,0 +1,19 @@
+{
+    "name": "@thebcms/medusa",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "build:plugin": "bun run _scripts/main.ts --build plugin",
+        "publish:plugin": "bun run _scripts/main.ts --publish plugin"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@types/fs-extra": "^11.0.4",
+        "fs-extra": "^11.3.3",
+        "prettier": "^3.9.6"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
