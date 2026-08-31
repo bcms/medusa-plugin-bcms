@@ -22,7 +22,9 @@ export async function versionUpdatePlugin(
             versionParts[2] = 0;
             break;
         default:
-            throw new Error(`Invalid version type: ${type}`);
+            throw new Error(
+                `Invalid version type: ${type} -> available types are: patch, minor, major`,
+            );
     }
     packageJson.version = versionParts.join('.');
     await fs.save('package.json', JSON.stringify(packageJson, null, 4));
