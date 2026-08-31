@@ -5,7 +5,8 @@
     "private": true,
     "scripts": {
         "build:plugin": "bun run _scripts/main.ts --build plugin",
-        "publish:plugin": "bun run _scripts/main.ts --publish plugin"
+        "publish:plugin": "bun run _scripts/main.ts --publish plugin",
+        "version-update:plugin": "bun run _scripts/main.ts --version_update plugin",
     },
     "devDependencies": {
         "@types/bun": "latest",

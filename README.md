@@ -17,6 +17,7 @@ The plugin lives in [`medusa-plugin-bcms/`](./medusa-plugin-bcms). See [its READ
 
 - To build plugin, from the root of the project run: `bun build:plugin`.
 - To publish plugin to npm, from the root of the project run: `bun publish:plugin`.
+- To update package version, from the root of the project run: `bun version-update:plugin -- --type major|minor|patch`.
 
 ## Quick local dev loop
 

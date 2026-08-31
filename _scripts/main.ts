@@ -1,6 +1,7 @@
 import { buildPlugin } from './build';
 import { publishPlugin } from './publish';
 import { getArgs } from './utils/args';
+import { versionUpdatePlugin } from './version';
 
 async function main(): Promise<void> {
     const args = getArgs();
@@ -25,6 +26,20 @@ async function main(): Promise<void> {
             default:
                 throw Error(
                     `Invalid publish target "${args.build}". Valid targets are: plugin`,
+                );
+        }
+    } else if (args.version_update) {
+        switch (args.version_update) {
+            case 'plugin':
+                console.log('Update plugin version...');
+                await versionUpdatePlugin(
+                    args.type as 'patch' | 'minor' | 'major',
+                );
+                await buildPlugin();
+                break;
+            default:
+                throw Error(
+                    `Invalid version update target "${args.build}". Valid targets are: plugin`,
                 );
         }
     } else {
