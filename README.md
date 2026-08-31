@@ -13,6 +13,11 @@ Monorepo for the official BCMS plugin for Medusa v2.
 
 The plugin lives in [`medusa-plugin-bcms/`](./medusa-plugin-bcms). See [its README](./medusa-plugin-bcms/README.md) for full setup, options, and the admin/store API surface.
 
+### Build and Deploy
+
+- To build plugin, from the root of the project run: `bun build:plugin`.
+- To publish plugin to npm, from the root of the project run: `bun publish:plugin`.
+
 ## Quick local dev loop
 
 ```bash
