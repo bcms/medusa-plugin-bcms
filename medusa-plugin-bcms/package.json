@@ -1,6 +1,6 @@
 {
     "name": "@thebcms/medusa-plugin",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "BCMS (https://thebcms.com) integration for Medusa v2 - link CMS entries to products and serve them through Medusa's admin and storefront APIs.",
     "author": "BCMS",
     "license": "MIT",
